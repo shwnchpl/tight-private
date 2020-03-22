@@ -103,10 +103,54 @@ WHITESPACE  : [ \t\r\n]+ -> skip;
  * Parser Rules
  **************************************************/
 
-tight
-    : empty_statement
+module
+    :
+        ( empty_statement
+        | cond_exp /* FIXME: DEBUG CODE. REMOVE. */
+        )*
+        EOF
     ;
 
 empty_statement
     : SEMI
+    ;
+
+cond_exp
+    : value
+    | LPAREN cond_exp RPAREN
+    | LOGIC_NOT cond_exp
+    | cond_exp cond_relation cond_exp
+    | cond_exp cond_conjunction cond_exp
+    ;
+
+cond_relation
+    : EQ
+    | GT
+    | GTE
+    | LT
+    | LTE
+    | NOT_EQ
+    ;
+
+cond_conjunction
+    : LOGIC_AND
+    | LOGIC_OR
+    ;
+
+count
+    : value units?
+    ;
+
+value
+    : LITERAL
+    | resolvable
+    ;
+
+resolvable
+    : AMP IDENT
+    ;
+
+units
+    : BYTES (BE|LE)?
+    | BITS
     ;

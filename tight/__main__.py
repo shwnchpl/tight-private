@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
 
 import antlr4
-from ._gen import TightLexer as lexer
-from ._gen import TightParser as parser
+from ._gen.TightLexer import TightLexer
+from ._gen.TightParser import TightParser
 
 
 def main():
-    print('Ok')
+    test1 = '''        &foo; ; &  fooo;
+    5 bytes; 10 bytes be;
+    &foo bits;
+    10;'''
+
+    test2 = '!(5 < 6) || 4';
+
+    inp = antlr4.InputStream(test2)
+    lexer = TightLexer(inp)
+
+    stream = antlr4.CommonTokenStream(lexer)
+    parser = TightParser(stream)
+    tree = parser.module()
+
+    print(tree.toStringTree(TightParser.ruleNames))
 
 
 if __name__ == '__main__':
