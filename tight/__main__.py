@@ -11,9 +11,11 @@ def main():
     &foo bits;
     10;'''
 
-    test2 = '!(5 < 6) || 4';
+    test2 = '!(5 < 6) || 4'
+    test3 = '[ sint : 5 bytes be ]; [uint : 5 bytes: &foo];'
+    test4 = '[sint::5];'
 
-    inp = antlr4.InputStream(test2)
+    inp = antlr4.InputStream(test4)
     lexer = TightLexer(inp)
 
     stream = antlr4.CommonTokenStream(lexer)

@@ -29,7 +29,6 @@ OPTIONAL    : 'optional';
 OTHERWISE   : 'otherwise';
 PACKET      : 'packet';
 SINT        : 'sint';
-STR         : 'str';
 UINT        : 'uint';
 VARIABLE    : 'variable';
 WHEN        : 'when';
@@ -107,6 +106,7 @@ module
     :
         ( empty_statement
         | cond_exp /* FIXME: DEBUG CODE. REMOVE. */
+        | field_desc SEMI /* FIXME: DEBUG CODE. REMOVE. */
         )*
         EOF
     ;
@@ -137,8 +137,19 @@ cond_conjunction
     | LOGIC_OR
     ;
 
+field_desc
+    : LBRACK scalar_type COLON count ( COLON value )? RBRACK
+    | LBRACK scalar_type COLON COLON value RBRACK
+    ;
+
+scalar_type
+    : IGNORE
+    | SINT
+    | UINT
+    ;
+
 count
-    : value units?
+    : value units
     ;
 
 value
