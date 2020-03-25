@@ -14,15 +14,14 @@ fragment LINE_COMMENT
     ;
 
 COMMENT
-    : BLOCK_COMMENT
-    | LINE_COMMENT
-    ;
+    : ( BLOCK_COMMENT | LINE_COMMENT ) -> skip;
 
 /* Keywords */
 ALWAYS      : 'always';
 BE          : 'be';
 BITS        : 'bits';
 BYTES       : 'bytes';
+CASE        : 'case';
 IGNORE      : '_';
 LE          : 'le';
 OPTIONAL    : 'optional';
@@ -77,6 +76,7 @@ LITERAL
 LBRACE      : '{';
 LBRACK      : '[';
 LPAREN      : '(';
+PIPE        : '|';
 RBRACE      : '}';
 RBRACK      : ']';
 RPAREN      : ')';
@@ -103,16 +103,14 @@ WHITESPACE  : [ \t\r\n]+ -> skip;
  **************************************************/
 
 module
-    :
-        ( empty_statement
-        | cond_exp /* FIXME: DEBUG CODE. REMOVE. */
-        | field_desc SEMI /* FIXME: DEBUG CODE. REMOVE. */
-        )*
-        EOF
+    : packet* EOF
     ;
 
-empty_statement
-    : SEMI
+packet
+    : PACKET IDENT
+        ( COLON IDENT
+            ( LPAREN cond_exp RPAREN )? )?
+      def_block
     ;
 
 cond_exp
@@ -136,6 +134,45 @@ cond_conjunction
     : LOGIC_AND
     | LOGIC_OR
     ;
+
+def_block
+    : LBRACE
+        ( always
+        | empty_statement
+        | optional
+        | variable
+        )*
+      RBRACE
+    ;
+
+always
+    : ALWAYS IDENT field_desc SEMI
+    ;
+
+empty_statement
+    : SEMI
+    ;
+
+optional
+    : OPTIONAL IDENT WHEN LPAREN cond_exp RPAREN def_block;
+
+variable
+    : VARIABLE IDENT case_block;
+
+case_block
+    : LBRACE case_statement+ otherwise_statement? RBRACE
+    ;
+
+case_statement
+    : CASE LPAREN cond_exp RPAREN case_tag def_block
+    ;
+
+case_tag
+    : PIPE IDENT COLON LITERAL PIPE
+    ;
+
+otherwise_statement
+    : OTHERWISE case_tag def_block;
 
 field_desc
     : LBRACK scalar_type COLON count ( COLON value )? RBRACK
