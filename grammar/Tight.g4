@@ -137,15 +137,15 @@ cond_conjunction
 
 def_block
     : LBRACE
-        ( always
+        ( always_statement
         | empty_statement
-        | optional
-        | variable
+        | optional_statement
+        | variable_statement
         )*
       RBRACE
     ;
 
-always
+always_statement
     : ALWAYS IDENT field_desc SEMI
     ;
 
@@ -153,10 +153,10 @@ empty_statement
     : SEMI
     ;
 
-optional
+optional_statement
     : OPTIONAL IDENT WHEN LPAREN cond_exp RPAREN def_block;
 
-variable
+variable_statement
     : VARIABLE IDENT case_block;
 
 case_block
