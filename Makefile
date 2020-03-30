@@ -3,7 +3,7 @@
 ####################################################
 
 .DEFAULT_GOAL := default
-.PHONY: clean default freeze parser run test venv
+.PHONY: clean default freeze parser run style test venv
 
 ####################################################
 # Constants
@@ -34,6 +34,9 @@ parser: $(GEN_DIR)/__init__.py
 
 run: venv parser
 	@$(PY_BIN)/python3 -m tight
+
+style: venv
+	@$(PY_BIN)/python3 -m pycodestyle --exclude=$(GEN_DIR)/* tight test
 
 test: venv parser
 	@$(PY_BIN)/python3 -m unittest
