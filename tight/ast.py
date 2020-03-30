@@ -19,6 +19,9 @@ class Module:
     def __init__(self) -> None:
         self._packets = OrderedDict()
 
+    def __repr__(self) -> str:
+        return 'Module({!r})'.format(self._packets)
+
     def append_packet(self, p: 'Packet') -> None:
         if p in self._packets:
             raise PacketRedefError
@@ -26,8 +29,7 @@ class Module:
 
 
 class Packet:
-    def __init__(
-            self, ident: str, parent: 'Packet' = None) -> None:
+    def __init__(self, ident: str, parent: 'Packet' = None) -> None:
         self.ident = ident
         self.parent = parent
         self.children = OrderedDict()
@@ -43,6 +45,11 @@ class Packet:
     def __hash__(self) -> int:
         return hash(self.ident)
 
+    def __repr__(self) -> str:
+        return 'Packet(\'{}\', parent={}, {!r})'.format(
+            self.ident,
+            self.parent.ident if self.parent is not None else None,
+            self.scope)
 
     def append_field(self, f: 'Field') -> None:
         self.scope.append_field(f)
@@ -57,6 +64,9 @@ class Scope:
     def __init__(self, parent: 'Scope' = None) -> None:
         self._parent = parent
         self.fields = OrderedDict()
+
+    def __repr__(self) -> str:
+        return 'Scope({!r})'.format(self.fields)
 
     def _lineage(self) -> ScopeGenerator:
         inst = self
@@ -79,9 +89,21 @@ class Condition:
         def __init__(self, val: Union[int, str]) -> None:
             self.val = val
 
+        def __repr__(self) -> str:
+            return 'Value({})'.format(self.val)
+
+        def __str__(self) -> str:
+            return str(self.val)
+
     class Negation(Expr):
         def __init__(self, expr: 'Expr') -> None:
             self.expr = expr
+
+        def __repr__(self) -> str:
+            return 'Negation({!r})'.format(self.expr)
+
+        def __str__(self) -> str:
+            return '!{}'.format(self.expr)
 
     class Relation(Expr):
         class Op(Enum):
@@ -97,18 +119,59 @@ class Condition:
             self.right = right
             self.op = op
 
+        def __repr__(self) -> str:
+            return 'Relation({!r}, {!r}, op={!r})'.format(
+                self.left,
+                self.right,
+                self.op)
+
+        def __str__(self) -> str:
+            op_to_str = {
+                Condition.Relation.Op.EQ: '==',
+                Condition.Relation.Op.GT: '>',
+                Condition.Relation.Op.GTE: '>=',
+                Condition.Relation.Op.LT: '<',
+                Condition.Relation.Op.LTE: '<=',
+                Condition.Relation.Op.NOT_EQ: '!='
+            }
+
+            return '({} {} {})'.format(
+                self.left, op_to_str[self.op], self.right)
+
     class Conjunction(Expr):
         class Op(Enum):
             AND = 0
             OR = 1
 
-        def __init__(self, left: 'Expr', right: 'Expr', op: Op) -> None:
+        def __init__(
+                self, left: 'Expr', right: 'Expr', op: Op) -> None:
             self.left = left
             self.right = right
             self.op = op
 
+        def __repr__(self) -> str:
+            return 'Conjunction({!r}, {!r}, op={!r})'.format(
+                self.left,
+                self.right,
+                self.op)
+
+        def __str__(self) -> str:
+            op_to_str = {
+                Condition.Conjunction.Op.AND: '&&',
+                Condition.Conjunction.Op.OR: '||',
+            }
+
+            return '({} {} {})'.format(
+                self.left, op_to_str[self.op], self.right)
+
     def __init__(self, root: Expr) -> None:
         self.root = root
+
+    def __repr__(self) -> str:
+        return 'Condition({!r})'.format(self.root)
+
+    def __str__(self) -> str:
+        return str(self.root)
 
 
 class Field:
@@ -121,6 +184,8 @@ class Field:
     def __hash__(self) -> int:
         return hash(self.ident)
 
+    def __repr__(self) -> str:
+        return 'Field(\'{}\')'.format(self.ident)
 
 
 class Always(Field):
@@ -128,12 +193,21 @@ class Always(Field):
         super().__init__(ident)
         self.data = data
 
+    def __repr__(self) -> str:
+        return 'Always(\'{}\', {!r})'.format(self.ident, self.data)
+
 
 class Optional(Field):
     def __init__(self, ident: str, parent: Scope, cond: Condition) -> None:
         super().__init__(ident)
         self.scope = Scope(parent=parent)
         self.cond = cond
+
+    def __repr__(self) -> str:
+        return 'Optional(\'{}\', {!r}, {!r})'.format(
+            self.ident,
+            self.cond,
+            self.scope)
 
     def append_field(self, f: Field) -> None:
         self.scope.append_field(f)
@@ -146,9 +220,15 @@ class Variable(Field):
                 self.label = label
                 self.val = val
 
+            def __repr__(self) -> str:
+                return 'Tag({}, {})'.format(self.label, self.val)
+
         def __init__(self, parent: Scope, tag: Tag) -> None:
             self.scope = Scope(parent=parent)
             self.tag = tag
+
+        def __repr__(self) -> str:
+            return 'Variant({!r}, {!r})'.format(self.tag, self.scope)
 
         def append_field(self, f: Field) -> None:
             self.scope.append_field(f)
@@ -158,6 +238,9 @@ class Variable(Field):
         self._variants = OrderedDict()
         self._labels = set()
         self._vals = set()
+
+    def __repr__(self) -> str:
+        return 'Variable(\'{}\', {!r})'.format(self.ident, self._variants)
 
     def append_variant(self, variant: Variant, cond: Condition = None) -> None:
         if cond is None and None in self._variants:
@@ -195,6 +278,9 @@ class Data:
             self.count = count
             self.unit = unit
 
+        def __repr__(self) -> str:
+            return 'Width({}, {!r})'.format(self.count, self.unit)
+
     def __init__(
             self, type_: Type, *, width: Width = None, count: int = 1) -> None:
         self.type_ = type_
@@ -204,3 +290,9 @@ class Data:
             self.width = Data.Width(1, Data.Unit.BYTES)
         else:
             self.width = width
+
+    def __repr__(self) -> str:
+        return 'Data({!r}, {!r}, {})'.format(
+            self.type_,
+            self.width,
+            self.count)
