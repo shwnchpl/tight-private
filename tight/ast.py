@@ -16,6 +16,8 @@ class VariantRedefError(Exception):
 
 
 class Module:
+    __slots__ = ['_packets']
+
     def __init__(self) -> None:
         self._packets = OrderedDict()
 
@@ -29,6 +31,8 @@ class Module:
 
 
 class Packet:
+    __slots__ = ['ident', 'parent', 'children', 'scope']
+
     def __init__(self, ident: str, parent: 'Packet' = None) -> None:
         self.ident = ident
         self.parent = parent
@@ -59,6 +63,8 @@ class Packet:
 
 
 class Scope:
+    __slots__ = ['_parent', 'fields']
+
     ScopeGenerator = Generator['Scope', None, None]
 
     def __init__(self, parent: 'Scope' = None) -> None:
@@ -82,10 +88,14 @@ class Scope:
 
 
 class Condition:
+    __slots__ = ['root']
+
     class Expr:
         pass
 
     class Value(Expr):
+        __slots__ = ['val']
+
         def __init__(self, val: Union[int, str]) -> None:
             self.val = val
 
@@ -96,6 +106,8 @@ class Condition:
             return str(self.val)
 
     class Negation(Expr):
+        __slots__ = ['expr']
+
         def __init__(self, expr: 'Expr') -> None:
             self.expr = expr
 
@@ -106,6 +118,8 @@ class Condition:
             return '!{}'.format(self.expr)
 
     class Relation(Expr):
+        __slots__ = ['left', 'right', 'op']
+
         class Op(Enum):
             EQ = 0
             GT = 1
@@ -139,6 +153,8 @@ class Condition:
                 self.left, op_to_str[self.op], self.right)
 
     class Conjunction(Expr):
+        __slots__ = ['left', 'right', 'op']
+
         class Op(Enum):
             AND = 0
             OR = 1
@@ -175,6 +191,8 @@ class Condition:
 
 
 class Field:
+    __slots__ = ['ident']
+
     def __init__(self, ident: str) -> None:
         self.ident = ident
 
@@ -189,6 +207,8 @@ class Field:
 
 
 class Always(Field):
+    __slots__ = ['data']
+
     def __init__(self, ident: str, data: 'Data') -> None:
         super().__init__(ident)
         self.data = data
@@ -198,6 +218,8 @@ class Always(Field):
 
 
 class Optional(Field):
+    __slots__ = ['cond', 'scope']
+
     def __init__(self, ident: str, parent: Scope, cond: Condition) -> None:
         super().__init__(ident)
         self.scope = Scope(parent=parent)
@@ -214,8 +236,14 @@ class Optional(Field):
 
 
 class Variable(Field):
+    __slots__ = ['_labels', '_vals', 'variants']
+
     class Variant:
+        __slots__ = ['scope', 'tag']
+
         class Tag:
+            __slots__ = ['label', 'val']
+
             def __init__(self, label: str, val: int) -> None:
                 self.label = label
                 self.val = val
@@ -235,19 +263,19 @@ class Variable(Field):
 
     def __init__(self, ident: str) -> None:
         super().__init__(ident)
-        self._variants = OrderedDict()
         self._labels = set()
         self._vals = set()
+        self.variants = OrderedDict()
 
     def __repr__(self) -> str:
-        return 'Variable(\'{}\', {!r})'.format(self.ident, self._variants)
+        return 'Variable(\'{}\', {!r})'.format(self.ident, self.variants)
 
     def append_variant(self, variant: Variant, cond: Condition = None) -> None:
-        if cond is None and None in self._variants:
+        if cond is None and None in self.variants:
             # Should never happen.
             raise VariantRedefError('multiple otherwise variants')
 
-        if cond in self._variants:
+        if cond in self.variants:
             # Should never happen.
             raise VariantRedefError('variant redefined')
 
@@ -260,10 +288,12 @@ class Variable(Field):
 
         self._labels.add(variant.tag.label)
         self._vals.add(variant.tag.val)
-        self._variants[cond] = variant
+        self.variants[cond] = variant
 
 
 class Data:
+    __slots__ = ['type', 'count', 'width']
+
     class Type(Enum):
         IGNORE = 0
         SINT = 1
@@ -274,6 +304,8 @@ class Data:
         BYTES = 1
 
     class Width:
+        __slots__ = ['count', 'unit']
+
         def __init__(self, count: int, unit: 'Unit') -> None:
             self.count = count
             self.unit = unit
@@ -283,7 +315,7 @@ class Data:
 
     def __init__(
             self, type_: Type, *, width: Width = None, count: int = 1) -> None:
-        self.type_ = type_
+        self.type = type_
         self.count = count
 
         if width is None:
@@ -293,6 +325,6 @@ class Data:
 
     def __repr__(self) -> str:
         return 'Data({!r}, {!r}, {})'.format(
-            self.type_,
+            self.type,
             self.width,
             self.count)
