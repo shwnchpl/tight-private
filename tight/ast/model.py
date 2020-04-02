@@ -1,5 +1,5 @@
 ###############################################################################
-#  ast.py - Tight Buffer abstract syntax tree data model.
+#  model.py - Tight Buffer abstract syntax tree data model.
 #
 #  Copyright 2020 Shawn M. Chapla
 #

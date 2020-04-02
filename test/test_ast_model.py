@@ -1,5 +1,5 @@
 ###############################################################################
-#  test_ast.py - Tight Buffer abstract syntax tree unit tests.
+#  test_ast_model.py - Tight Buffer abstract syntax tree model unit tests.
 #
 #  Copyright 2020 Shawn M. Chapla
 #
@@ -17,7 +17,7 @@
 ###############################################################################
 
 
-from tight.ast import *
+from tight.ast.model import *
 
 import unittest
 
