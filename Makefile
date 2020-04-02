@@ -21,7 +21,7 @@ REQUIREMENTS_DEST := requirements.txt
 ####################################################
 
 clean:
-	-rm -rf tight/_gen
+	-rm -rf $(GEN_DIR)
 	-rm -rf venv
 
 default:
@@ -49,10 +49,10 @@ venv: $(PY_BIN)/activate
 
 $(GEN_DIR)/__init__.py: $(GRAMMAR_SRC)
 	@antlr4 $(ANTLR4_OPTS) $(GRAMMAR_SRC)
-	@touch tight/_gen/__init__.py
+	@touch $(GEN_DIR)/__init__.py
 
 $(PY_BIN)/activate: $(REQUIREMENTS_DEST)
 	@test -d venv || python3 -m venv venv
 	@$(PY_BIN)/pip3 install --upgrade pip
 	@$(PY_BIN)/pip3 install -r $(REQUIREMENTS_DEST)
-	@touch $(PY_BIN)activate
+	@touch $(PY_BIN)/activate
