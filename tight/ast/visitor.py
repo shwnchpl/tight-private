@@ -1,5 +1,5 @@
 ###############################################################################
-#  __init__.py - Tight Buffer abstract syntax tree module init file.
+#  visitor.py - Tight Buffer abstract syntax tree visitor interface.
 #
 #  Copyright 2020 Shawn M. Chapla
 #
@@ -17,5 +17,6 @@
 ###############################################################################
 
 
-from .model import Module as AstRoot
-from .visitor import AstVisitor
+class AstVisitor:
+    # TODO: Implement.
+    pass
