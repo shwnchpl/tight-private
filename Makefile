@@ -11,7 +11,7 @@
 
 GEN_DIR := tight/_gen
 
-ANTLR4_OPTS := -Dlanguage=Python3 -o $(GEN_DIR)
+ANTLR4_OPTS := -Dlanguage=Python3 -no-listener -visitor -o $(GEN_DIR)
 GRAMMAR_SRC := $(shell pwd)/grammar/Tight.g4
 PY_BIN := venv/bin
 REQUIREMENTS_DEST := requirements.txt
