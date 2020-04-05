@@ -17,22 +17,12 @@
 ###############################################################################
 
 
-import antlr4
-from ._gen.TightLexer import TightLexer
-from ._gen.TightParser import TightParser
+from .cst import CstParser
+from .cst.builder import build_cst
 
 
 def main():
-    test1 = '''        &foo; ; &  fooo;
-    5 bytes; 10 bytes be;
-    &foo bits;
-    10;'''
-
-    test2 = '!(5 < 6) || 4'
-    test3 = '[ sint : 5 bytes be ]; [uint : 5 bytes: &foo];'
-    test4 = '[sint::5];'
-
-    test5 = '''
+    test_src = '''
     packet P2_generic : P2(&subtype == 3) {
         always timestamp    [ uint: 4 bytes be ];
         always version      [ uint: 2 bits ];
@@ -56,14 +46,8 @@ def main():
         }
     }'''
 
-    inp = antlr4.InputStream(test5)
-    lexer = TightLexer(inp)
-
-    stream = antlr4.CommonTokenStream(lexer)
-    parser = TightParser(stream)
-    tree = parser.module()
-
-    print(tree.toStringTree(TightParser.ruleNames))
+    cst_root = build_cst(test_src)
+    print(cst_root.toStringTree(CstParser.ruleNames))
 
 
 if __name__ == '__main__':
