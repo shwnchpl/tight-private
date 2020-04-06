@@ -84,8 +84,11 @@ class AstTests(unittest.TestCase):
         _ = repr(opt)
 
     def test_packet(self):
+        c = Condition(Condition.Value(3))
+
         p1 = Packet('foo')
         p2 = Packet('bar', parent=p1)
+        p3 = Packet('bas', parent=p2, cond=c)
 
         data = Data(Data.Type.UINT, count=8)
         field1 = Always('foo', data)
@@ -93,6 +96,11 @@ class AstTests(unittest.TestCase):
 
         with self.assertRaises(FieldRedefError):
             p2.append_field(field1)
+
+        self.assertTrue(p2 in p1.children)
+        self.assertTrue(p3 in p2.children)
+        self.assertFalse(p3 in p1.children)
+        self.assertIs(p2.children[p3], c)
 
         # Make sure this doesn't raise an exception.
         _ = repr(p2)

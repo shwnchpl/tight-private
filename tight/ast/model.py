@@ -52,12 +52,17 @@ class Module:
 class Packet:
     __slots__ = ['ident', 'parent', 'children', 'scope']
 
-    def __init__(self, ident: str, parent: 'Packet' = None) -> None:
+    def __init__(
+            self,
+            ident: str,
+            parent: 'Packet' = None,
+            cond: 'Condition' = None) -> None:
         self.ident = ident
         self.parent = parent
         self.children = OrderedDict()
 
         if parent is not None:
+            parent.append_child(self, cond)
             self.scope = Scope(parent=parent.scope)
         else:
             self.scope = Scope()
