@@ -35,18 +35,18 @@ class VariantRedefError(Exception):
 
 
 class Module:
-    __slots__ = ['_packets']
+    __slots__ = ['packets']
 
     def __init__(self) -> None:
-        self._packets = OrderedDict()
+        self.packets = OrderedDict()
 
     def __repr__(self) -> str:
-        return 'Module({!r})'.format(self._packets)
+        return 'Module({!r})'.format(self.packets)
 
     def append_packet(self, p: 'Packet') -> None:
-        if p in self._packets:
+        if p in self.packets:
             raise PacketRedefError
-        self._packets[p] = None
+        self.packets[p] = None
 
 
 class Packet:
