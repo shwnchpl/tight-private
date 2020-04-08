@@ -17,12 +17,20 @@
 ###############################################################################
 
 
+from .ast.builder import build_ast
 from .cst import CstParser
 from .cst.builder import build_cst
 
 
 def main():
     test_src = '''
+    packet Payload {
+        always header  [ uint : 2 bits ];
+        always subtype [ uint : 6 bits ];
+    }
+
+    packet P2 : Payload(&header == 1) {}
+
     packet P2_generic : P2(&subtype == 3) {
         always timestamp    [ uint: 4 bytes be ];
         always version      [ uint: 2 bits ];
@@ -47,7 +55,9 @@ def main():
     }'''
 
     cst_root = build_cst(test_src)
-    print(cst_root.toStringTree(CstParser.ruleNames))
+    # print(cst_root.toStringTree(CstParser.ruleNames))
+    ast_root = build_ast(cst_root)
+    print(ast_root)
 
 
 if __name__ == '__main__':

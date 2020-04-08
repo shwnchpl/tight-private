@@ -21,6 +21,9 @@ from . import AstRoot, model
 from ..cst import CstParser, CstRoot, CstVisitor
 
 
+# TODO: [SHAWN] handle semantic errors more gracefully?
+
+
 class AstBuilder(CstVisitor):
     def __init__(self):
         super().__init__()
@@ -30,25 +33,43 @@ class AstBuilder(CstVisitor):
     def visitModule(self, ctx: CstParser.ModuleContext) -> AstRoot:
         mod = model.Module()
 
-        # Visit each packet, building it.
-
-        # Add to packets dict and module.
+        for p_ctx in ctx.packet():
+            p = self.visit(p_ctx)
+            self._packets[p.ident] = p
+            mod.append_packet(p)
 
         return mod
 
     def visitPacket(self, ctx: CstParser.PacketContext) -> model.Packet:
-        # Create packet. We'll run into an issue here if our parent
-        # isn't around.
+        parent = None
+        cond = None
+
+        parent_ident = ctx.IDENT(1)
+        if parent_ident is not None:
+            try:
+                parent = self._packets[str(parent_ident)]
+            except KeyError:
+                ctx.parser.notifyErrorListeners(
+                    'No such packet: {}'.format(parent_ident),
+                    parent_ident.symbol)
+            else:
+                cond_ctx = ctx.cond_exp()
+                if cond_ctx is not None:
+                    cond = self.visit(cond_ctx)
+
+        p = model.Packet(str(ctx.IDENT(0)), parent=parent, cond=cond)
 
         # Set current scope to packet scope.
-        # old_scope = self._scope
+        old_scope = self._scope
+        self._scope = p.scope
 
         # Visit each statement in the packet, adding to packet.
+        # TODO: [SHAWN] actually do this.
 
         # Restore old scope.
-        # self._scope = old_scope
+        self._scope = old_scope
 
-        pass
+        return p
 
     def visitCond_exp(self, ctx: CstParser.Cond_expContext):
         pass
