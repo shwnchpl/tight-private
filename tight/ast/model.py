@@ -17,6 +17,7 @@
 ###############################################################################
 
 
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from enum import Enum
 from typing import Generator, Union
@@ -214,9 +215,10 @@ class Condition:
         return str(self.root)
 
 
-class Field:
+class Field(metaclass=ABCMeta):
     __slots__ = ['ident']
 
+    @abstractmethod
     def __init__(self, ident: str) -> None:
         self.ident = ident
 

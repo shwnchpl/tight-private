@@ -154,13 +154,14 @@ cond_conjunction
     ;
 
 def_block
-    : LBRACE
-        ( always_statement
-        | empty_statement
-        | optional_statement
-        | variable_statement
-        )*
-      RBRACE
+    : LBRACE statement* RBRACE
+    ;
+
+statement
+    : always_statement
+    | empty_statement
+    | optional_statement
+    | variable_statement
     ;
 
 always_statement

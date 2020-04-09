@@ -21,9 +21,6 @@ from . import AstRoot, model
 from ..cst import CstParser, CstRoot, CstVisitor
 
 
-# TODO: [SHAWN] handle semantic errors more gracefully?
-
-
 class AstBuilder(CstVisitor):
     def __init__(self):
         super().__init__()
@@ -36,7 +33,12 @@ class AstBuilder(CstVisitor):
         for p_ctx in ctx.packet():
             p = self.visit(p_ctx)
             self._packets[p.ident] = p
-            mod.append_packet(p)
+            try:
+                mod.append_packet(p)
+            except model.PacketRedefError:
+                ctx.parser.notifyErrorListeners(
+                    'Packet redefinition error: {}'.format(p.ident),
+                    p_ctx.IDENT(0).symbol)
 
         return mod
 
@@ -64,7 +66,27 @@ class AstBuilder(CstVisitor):
         self._scope = p.scope
 
         # Visit each statement in the packet, adding to packet.
-        # TODO: [SHAWN] actually do this.
+        for stmt in ctx.def_block().statement():
+            f = self.visit(stmt)
+            if f is not None:
+                try:
+                    p.append_field(f)
+                except model.FieldRedefError:
+                    bad_tok = None
+                    ident_stmt = (
+                        stmt.optional_statement() or
+                        stmt.always_statement() or
+                        stmt.empty_statement())
+                    if ident_stmt is not None:
+                        bad_tok = ident_stmt.IDENT().symbol
+                    else:
+                        empty_stmt = stmt.empty_statement()
+                        if empty_stmt is not None:
+                            bad_tok = empty_stmt.SEMI().symbol
+
+                    ctx.parser.notifyErrorListeners(
+                        'Field redefinition error: {}'.format(f.ident),
+                        bad_tok)
 
         # Restore old scope.
         self._scope = old_scope
@@ -80,7 +102,7 @@ class AstBuilder(CstVisitor):
     def visitCond_conjunction(self, ctx: CstParser.Cond_conjunctionContext):
         pass
 
-    def visitDef_block(self, ctx: CstParser.Def_blockContext):
+    def visit_statement(self, ctx: CstParser.StatementContext):
         pass
 
     def visitAlways_statement(self, ctx: CstParser.Always_statementContext):
