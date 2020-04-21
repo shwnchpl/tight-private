@@ -99,17 +99,17 @@ class Scope:
     def __repr__(self) -> str:
         return 'Scope({!r})'.format(self.fields)
 
-    def _lineage(self) -> ScopeGenerator:
+    def lineage(self) -> ScopeGenerator:
         inst = self
         while inst is not None:
             yield inst
             inst = inst._parent
 
     def append_field(self, f: 'Field') -> None:
-        for p in self._lineage():
-            if f in p.fields:
+        for p in self.lineage():
+            if f.ident in p.fields:
                 raise FieldRedefError
-        self.fields[f] = None
+        self.fields[f.ident] = f
 
 
 class Condition:

@@ -19,6 +19,7 @@
 
 from . import AstRoot, model
 from ..cst import CstParser, CstRoot, CstVisitor
+from typing import Union
 
 
 class AstBuilder(CstVisitor):
@@ -45,6 +46,7 @@ class AstBuilder(CstVisitor):
     def visitPacket(self, ctx: CstParser.PacketContext) -> model.Packet:
         parent = None
         cond = None
+        old_scope = self._scope
 
         parent_ident = ctx.IDENT(1)
         if parent_ident is not None:
@@ -57,12 +59,14 @@ class AstBuilder(CstVisitor):
             else:
                 cond_ctx = ctx.cond_exp()
                 if cond_ctx is not None:
-                    cond = self.visit(cond_ctx)
+                    # Set scope to parent scope for the purposes of
+                    # resolving this condition expression.
+                    self._scope = parent.scope
+                    cond = model.Condition(self.visit(cond_ctx))
 
         p = model.Packet(str(ctx.IDENT(0)), parent=parent, cond=cond)
 
         # Set current scope to packet scope.
-        old_scope = self._scope
         self._scope = p.scope
 
         # Visit each statement in the packet, adding to packet.
@@ -93,14 +97,69 @@ class AstBuilder(CstVisitor):
 
         return p
 
-    def visitCond_exp(self, ctx: CstParser.Cond_expContext):
-        pass
+    def visitCond_exp(
+            self,
+            ctx: CstParser.Cond_expContext) -> model.Condition.Expr:
+        val = ctx.value()
+        exp0 = ctx.cond_exp(0)
+        exp1 = ctx.cond_exp(1)
+        cond_rel = ctx.cond_relation()
+        cond_conj = ctx.cond_conjunction()
 
-    def visitCond_relation(self, ctx: CstParser.Cond_relationContext):
-        pass
+        if cond_conj is not None:
+            return model.Condition.Conjunction(
+                self.visit(exp0),
+                self.visit(exp1),
+                op=self.visit(cond_conj))
+        elif cond_rel is not None:
+            return model.Condition.Relation(
+                self.visit(exp0),
+                self.visit(exp1),
+                op=self.visit(cond_rel))
+        elif exp0 is not None:
+            res = self.visit(exp0)
+            if ctx.LOGIC_NOT() is not None:
+                return model.Condition.Negation(res)
+            else:
+                return res
+        elif val is not None:
+            return model.Condition.Value(
+                self.visit(val))
 
-    def visitCond_conjunction(self, ctx: CstParser.Cond_conjunctionContext):
-        pass
+        # TODO: [SHAWN] raise some kind of error.
+        return None
+
+    def visitCond_relation(
+            self,
+            ctx: CstParser.Cond_relationContext
+            ) -> model.Condition.Relation.Op:
+        if ctx.EQ() is not None:
+            return model.Condition.Relation.Op.EQ
+        elif ctx.GT() is not None:
+            return model.Condition.Relation.Op.GT
+        elif ctx.GTE() is not None:
+            return model.Condition.Relation.Op.GTE
+        elif ctx.LT() is not None:
+            return model.Condition.Relation.Op.LT
+        elif ctx.LTE() is not None:
+            return model.Condition.Relation.Op.LTE
+        elif ctx.NOT_EQ() is not None:
+            return model.Condition.Relation.Op.NOT_EQ
+
+        # TODO: [SHAWN] raise some kind of error.
+        return None
+
+    def visitCond_conjunction(
+            self,
+            ctx: CstParser.Cond_conjunctionContext
+            ) -> model.Condition.Conjunction.Op:
+        if ctx.LOGIC_AND() is not None:
+            return Condition.Conjunction.Op.AND
+        elif ctx.LOGIC_OR() is not None:
+            return Condition.Conjunction.Op.OR
+
+        # TODO: [SHAWN] raise some kind of error.
+        return None
 
     def visit_statement(self, ctx: CstParser.StatementContext):
         pass
@@ -141,8 +200,23 @@ class AstBuilder(CstVisitor):
     def visitCount(self, ctx: CstParser.CountContext):
         pass
 
-    def visitValue(self, ctx: CstParser.ValueContext):
-        pass
+    def visitValue(self, ctx: CstParser.ValueContext) -> Union[int, str]:
+        lit = ctx.LITERAL()
+        r = ctx.resolvable()
+
+        if lit is not None:
+            return int(lit.getText())
+        elif r is not None and self._scope is not None:
+            ident = r.IDENT().getText()
+            for s in self._scope.lineage():
+                if (ident in s.fields and
+                        isinstance(s.fields[ident], model.Always)):
+                    return ident
+            # TODO: [SHAWN] raise some kind of error.
+            return None
+
+        # TODO: [SHAWN] raise some kind of error.
+        return None
 
     def visitResolvable(self, ctx: CstParser.ResolvableContext):
         pass
