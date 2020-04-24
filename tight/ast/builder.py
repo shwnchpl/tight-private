@@ -161,11 +161,14 @@ class AstBuilder(CstVisitor):
         # TODO: [SHAWN] raise some kind of error.
         return None
 
-    def visit_statement(self, ctx: CstParser.StatementContext):
-        pass
+    def visitAlways_statement(
+            self,
+            ctx: CstParser.Always_statementContext
+            ) -> model.Always:
+        ident = ctx.IDENT().getText()
+        data = self.visit(ctx.field_desc())
 
-    def visitAlways_statement(self, ctx: CstParser.Always_statementContext):
-        pass
+        return model.Always(ident, data)
 
     def visitOptional_statement(
             self,
@@ -180,9 +183,6 @@ class AstBuilder(CstVisitor):
     def visitCase_block(self, ctx: CstParser.Case_blockContext):
         pass
 
-    def visitCase_statement(self, ctx: CstParser.Case_statementContext):
-        pass
-
     def visitCase_tag(self, ctx: CstParser.Case_tagContext):
         pass
 
@@ -191,38 +191,87 @@ class AstBuilder(CstVisitor):
             ctx: CstParser.Otherwise_statementContext):
         pass
 
-    def visitField_desc(self, ctx: CstParser.Field_descContext):
-        pass
+    def visitField_desc(
+            self,
+            ctx: CstParser.Field_descContext
+            ) -> model.Data:
+        st = self.visit(ctx.scalar_type())
 
-    def visitScalar_type(self, ctx: CstParser.Scalar_typeContext):
-        pass
+        count = None
+        val = None
 
-    def visitCount(self, ctx: CstParser.CountContext):
-        pass
+        count_ctx = ctx.count()
+        val_ctx = ctx.value()
 
-    def visitValue(self, ctx: CstParser.ValueContext) -> Union[int, str]:
+        if count_ctx is not None:
+            count = self.visit(ctx.count())
+
+        if val_ctx is not None:
+            val = self.visit(ctx.value())
+
+        if count is None and val is None:
+            # FIXME: Handle this error correctly.
+            raise RuntimeError('change me')
+
+        if val is not None:
+            return model.Data(st, width=count)
+
+        return model.Data(st, width=count, count=val)
+
+    def visitScalar_type(
+            self,
+            ctx: CstParser.Scalar_typeContext
+            ) -> model.Data.Type:
+        if ctx.IGNORE() is not None:
+            return model.Data.Type.IGNORE
+        elif ctx.SINT() is not None:
+            return model.Data.Type.SINT
+        elif ctx.UINT() is not None:
+            return model.Data.Type.UINT
+
+        # TODO: Raise some kind of error.
+        return None
+
+    def visitCount(self, ctx: CstParser.CountContext) -> model.Data.Width:
+        val = self.visit(ctx.value())
+        units = self.visit(ctx.units())
+
+        return model.Data.Width(val, units)
+
+    def visitValue(self, ctx: CstParser.ValueContext) -> model.ValueT:
         lit = ctx.LITERAL()
         r = ctx.resolvable()
 
         if lit is not None:
             return int(lit.getText())
-        elif r is not None and self._scope is not None:
-            ident = r.IDENT().getText()
+
+        return self.visit(r)
+
+    def visitResolvable(
+            self,
+            ctx: CstParser.ResolvableContext
+            ) -> model.ValueT:
+        if ctx is not None and self._scope is not None:
+            ident = ctx.IDENT().getText()
             for s in self._scope.lineage():
                 if (ident in s.fields and
                         isinstance(s.fields[ident], model.Always)):
                     return ident
-            # TODO: [SHAWN] raise some kind of error.
-            return None
 
         # TODO: [SHAWN] raise some kind of error.
         return None
 
-    def visitResolvable(self, ctx: CstParser.ResolvableContext):
-        pass
+    def visitUnits(self, ctx: CstParser.UnitsContext) -> model.Data.Unit:
+        if ctx.BITS() is not None:
+            return model.Data.Unit.BITS
+        elif ctx.BYTES() is not None:
+            if ctx.LE() is not None:
+                return model.Data.Unit.BYTES_LE
+            else:
+                return model.Data.Unit.BYTES_BE
 
-    def visitUnits(self, ctx: CstParser.UnitsContext):
-        pass
+        # TODO: [SHAWN] raise some kind of error.
+        return None
 
 
 def build_ast(tree: CstRoot) -> AstRoot:

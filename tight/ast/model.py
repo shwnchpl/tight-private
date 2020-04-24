@@ -23,6 +23,9 @@ from enum import Enum
 from typing import Generator, Union
 
 
+ValueT = Union[int, str]
+
+
 class PacketRedefError(Exception):
     pass
 
@@ -121,7 +124,7 @@ class Condition:
     class Value(Expr):
         __slots__ = ['val']
 
-        def __init__(self, val: Union[int, str]) -> None:
+        def __init__(self, val: ValueT) -> None:
             self.val = val
 
         def __repr__(self) -> str:
@@ -327,12 +330,13 @@ class Data:
 
     class Unit(Enum):
         BITS = 0
-        BYTES = 1
+        BYTES_BE = 1
+        BYTES_LE = 2
 
     class Width:
         __slots__ = ['count', 'unit']
 
-        def __init__(self, count: int, unit: 'Unit') -> None:
+        def __init__(self, count: ValueT, unit: 'Unit') -> None:
             self.count = count
             self.unit = unit
 
@@ -340,12 +344,17 @@ class Data:
             return 'Width({}, {!r})'.format(self.count, self.unit)
 
     def __init__(
-            self, type_: Type, *, width: Width = None, count: int = 1) -> None:
+            self,
+            type_: Type,
+            *,
+            width: Width = None,
+            count: ValueT = 1
+            ) -> None:
         self.type = type_
         self.count = count
 
         if width is None:
-            self.width = Data.Width(1, Data.Unit.BYTES)
+            self.width = Data.Width(1, Data.Unit.BYTES_BE)
         else:
             self.width = width
 
